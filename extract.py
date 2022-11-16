@@ -136,42 +136,19 @@ def chunks_generator(path_to_file):
 def convert_to_wav(path_to_file):
     "Convert raw audio data using ffmpeg and subprocess."
     previous_stream_id = -1
-    processes = {}
     for compression, stream_id, raw_audio_chunk in chunks_generator(path_to_file):
-        if stream_id != previous_stream_id and not processes.get(stream_id):
-            output_file = os.path.splitext(path_to_file)[
-                0] + "_stream{}".format(stream_id) + ".ogg"
+        if stream_id != previous_stream_id:
             # Bug 3: Always default to g729 when compression does not have a value
             format = formats[0]
             if compression != None:
                 format = formats[compression]
-            processes[stream_id] = subprocess.Popen(
-                ("ffmpeg",
-                 "-hide_banner",
-                 "-y",
-                 "-f",
-                 # Bug 2: the -f parameter needs to be a format, not a codec! So take the value of the format that corresponds to the codec, rather than the value for  the codec
-                 # codecs[compression],
-                 format,
-                 "-i",
-                 "pipe:0",
-                 "-q:a",
-                 "0",
-                 "-ar",
-                 "7350",
-                 # "-ac",
-                 # "1",
-                 # "-c:a",
-                 # "pcm_mulaw",
-                 output_file,
-                 ),
-                stdin=subprocess.PIPE
-            )
+            output_file = os.path.splitext(path_to_file)[
+                0] + "_stream{}".format(stream_id) + "." + format
             previous_stream_id = stream_id
-        processes[stream_id].stdin.write(raw_audio_chunk)
-    for key in processes.keys():
-        processes[key].stdin.close()
-        processes[key].wait()
+        # processes[stream_id].stdin.write(raw_audio_chunk)
+        with open(output_file, 'a+b') as f:
+            f.write(raw_audio_chunk)
+            f.close()
 
 
 if __name__ == "__main__":
