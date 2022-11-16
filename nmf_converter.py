@@ -45,7 +45,7 @@ codecs = {
 }
 
 # Bug 2: The formats according to FFMPEG 4.2 that correpsond to the codecs list above
-# Originally in this sample code codecs are used as format parameter, so let's go a head and actually figure out what the input format is to force conversion 
+# Originally in this sample code codecs are used as format parameter, so let's go a head and actually figure out what the input format is to force conversion
 # through a specific FFMPEG codec
 formats = {
     0: "g729",
@@ -78,10 +78,10 @@ def get_compression_type(data):
     for i in range(0, len(data), 22):
         type_id = struct.unpack("h", data[i:i + 2])[0]
         data_size = struct.unpack("i", data[i + 2:i + 6])[0]
-        # Bug 1: See how the data struct we are parsing in chuncks actually gets updated IN the loop, causing the index i to get out of bounds 
+        # Bug 1: See how the data struct we are parsing in chuncks actually gets updated IN the loop, causing the index i to get out of bounds
         # when the chunk size exceeds 22. In the NMFs we are processing we encounter a lot of chunksizes that are 6x as large (132 bytes)
-        # without this change that would cause an exception. 
-        # Moving the data in a temp struct, as we only need this to determine our return value 
+        # without this change that would cause an exception.
+        # Moving the data in a temp struct, as we only need this to determine our return value
         # data = struct.unpack("16s", data[i + 6:i + 22])[0]
         temp = struct.unpack("16s", data[i + 6:i + 22])[0]
         if type_id == 10:
@@ -111,14 +111,16 @@ def chunks_generator(path_to_file):
     packet_header_start = 0
     while True:
         packet_header_end = packet_header_start + 28
-        headers = get_packet_header(data[packet_header_start:packet_header_end])
+        headers = get_packet_header(
+            data[packet_header_start:packet_header_end])
         # Bug 4: We had to add two more packet_types to the equation to avoid getting Okb WAV files in the end. Not entirely sure if
         # packet_types and packet_subtypes were added to the original NMF specs since the creation of the original convertor at https://github.com/quarckster/nmf_to_wav
         # but this code works for all of the NMF files that we have encountered thus far
         # if headers["packet_type"] == 4 and headers["packet_subtype"] == 0:
         if (headers["packet_type"] == 4 and headers["packet_subtype"] == 0) or (headers["packet_type"] == 4 and headers["packet_subtype"] == 3) or (headers["packet_type"] == 5 and headers["packet_subtype"] == 300):
             chunk_start = packet_header_end + headers["parameters_size"]
-            chunk_end = (chunk_start + headers["packet_size"] - headers["parameters_size"])
+            chunk_end = (
+                chunk_start + headers["packet_size"] - headers["parameters_size"])
             chunk_length = chunk_end - chunk_start
             fmt = "{}s".format(chunk_length)
             raw_audio_chunk = struct.unpack(fmt, data[chunk_start:chunk_end])
@@ -137,7 +139,8 @@ def convert_to_wav(path_to_file):
     processes = {}
     for compression, stream_id, raw_audio_chunk in chunks_generator(path_to_file):
         if stream_id != previous_stream_id and not processes.get(stream_id):
-            output_file = os.path.splitext(path_to_file)[0] + "_stream{}".format(stream_id) + ".wav"
+            output_file = os.path.splitext(path_to_file)[
+                0] + "_stream{}".format(stream_id) + ".ogg"
             # Bug 3: Always default to g729 when compression does not have a value
             format = formats[0]
             if compression != None:
@@ -152,7 +155,16 @@ def convert_to_wav(path_to_file):
                  format,
                  "-i",
                  "pipe:0",
-                 output_file),
+                 "-q:a",
+                 "0",
+                 "-ar",
+                 "7350",
+                 # "-ac",
+                 # "1",
+                 # "-acodec",
+                 # "libvorbis"
+                 output_file,
+                 ),
                 stdin=subprocess.PIPE
             )
             previous_stream_id = stream_id
