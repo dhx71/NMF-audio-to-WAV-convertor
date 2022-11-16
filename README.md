@@ -1,6 +1,6 @@
 # extract.py description
 
-extract.py simply extract audio streams from the .nmf file and save them into a file named `<original-filename>\_stream<n>.<format>`. Ex.: `7166083243371987119.nmf` => `7166083243371987119_stream0.g729`
+extract.py simply extract audio streams from the .nmf file and save them into a file named `<original-filename>_stream<n>.<format>`. Ex.: `7166083243371987119.nmf` => `7166083243371987119_stream0.g729`
 
 The extracted files occupy a bit less space on the disk. Later when you want to listen to them, you can convert the files to WAV as follow:
 
